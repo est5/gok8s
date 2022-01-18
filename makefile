@@ -20,7 +20,7 @@ kind-up:
 	kind create cluster \
 	--image kindest/node:v1.21.1@sha256:69860bda5563ac81e3c0057d654b5253219618a22ec3a346306239bba8cfa1a6 \
 	--name ${KIND_CLUSTER} \
-	--config /home/est5/Dev/serviceTemplate/gok8s/zarf/k8s/kind/kind-config.yaml
+	--config zarf/k8s/kind/kind-config.yaml
 	kubectl config set-context --current --namespace=service-system
 
 kind-down:
