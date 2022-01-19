@@ -5,13 +5,13 @@ run:
 
 VERSION := 1.0
 
-all: service
+all: sales-api
 
-service:
+sales-api:
 	docker build \
-	-f zarf/docker/dockerfile \
-	-t service-amd64:${VERSION} \
-	--build-arg BUILD_REF=${VERSION} \
+	-f zarf/docker/dockerfile.sales-api \
+	-t sales-api-amd64:$(VERSION) \
+	--build-arg BUILD_REF=$(VERSION) \
 	.
 
 
@@ -19,39 +19,40 @@ KIND_CLUSTER := est-cluster
 kind-up:
 	kind create cluster \
 	--image kindest/node:v1.21.1@sha256:69860bda5563ac81e3c0057d654b5253219618a22ec3a346306239bba8cfa1a6 \
-	--name ${KIND_CLUSTER} \
+	--name $(KIND_CLUSTER) \
 	--config zarf/k8s/kind/kind-config.yaml
-	kubectl config set-context --current --namespace=service-system
+	kubectl config set-context --current --namespace=sales-system
 
 kind-down:
-	kind delete cluster --name ${KIND_CLUSTER}
+	kind delete cluster --name $(KIND_CLUSTER)
 
 kind-load:
-	kind load docker-image service-amd64:${VERSION} --name ${KIND_CLUSTER}
+	cd zarf/k8s/kind/sales-pod; kustomize edit set image sales-api-image=sales-api-amd64:$(VERSION)
+	kind load docker-image sales-api-amd64:$(VERSION) --name $(KIND_CLUSTER)
 
 kind-apply:
-	kustomize build zarf/k8s/kind/service-pod | kubectl apply -f -
+	kustomize build zarf/k8s/kind/sales-pod | kubectl apply -f -
 
 kind-logs:
-	kubectl logs -l app=service --all-containers=true -f --tail=100 --namespace=service-system
+	kubectl logs -l app=sales --all-containers=true -f --tail=100 --namespace=sales-system
 
 kind-status:
 	kubectl get nodes -o wide
 	kubectl get svc -o wide
 	kubectl get pods -o wide --watch --all-namespaces
 
-kind-status-service:
-	kubectl get pods -o wide --watch --namespace=service-system
+kind-status-sales:
+	kubectl get pods -o wide --watch --namespace=sales-system
 
 kind-restart:
-	kubectl rollout restart deployment service-pod --namespace=service-system
+	kubectl rollout restart deployment sales-pod --namespace=sales-system
 
 kind-update: all kind-load kind-restart
 
 kind-update-apply: all kind-load kind-apply
 
 kind-describe:
-	kubectl describe pod -l app=service
+	kubectl describe pod -l app=sales
 
 tidy:
 	go mod tidy
